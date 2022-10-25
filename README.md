@@ -1,6 +1,6 @@
 # Wireless VR Bridge
 
-Bridge for low-latency wireless transmission of realtime VR content over WiFi.
+Bridge for low-latency wireless transmission of realtime virtual reality content over WiFi.
 
 ## Planned Features
 

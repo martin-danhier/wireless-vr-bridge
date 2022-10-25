@@ -1,0 +1,15 @@
+# Unsupported editor directories and files
+.ccls-cache
+.ccls
+.vs
+
+# Build directories
+cmake-build-*
+build*
+
+# Compiled shader modules
+*.spv
+
+# Misc
+*.log
+debug_print

@@ -33,8 +33,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif ()
 
 ##################################################################
+###                        DEPENDENCIES                        ###
+##################################################################
+
+# Load external script
+add_subdirectory(external)
+
+##################################################################
 ###                         LIBRARIES                          ###
 ##################################################################
 
 # WVB server
-add_subdirectory(server)
+add_subdirectory(wvb_server)

@@ -1,0 +1,7 @@
+{
+	"alwaysActivate": false,
+	"name" : "wvb_server",
+	"directory" : "",
+	"resourceOnly" : false,
+	"hmd_presence" : ["*.*"]
+}

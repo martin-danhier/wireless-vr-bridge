@@ -1,5 +1,5 @@
 {
-	"alwaysActivate": false,
+	"alwaysActivate": true,
 	"name" : "wvb_server",
 	"directory" : "",
 	"resourceOnly" : false,

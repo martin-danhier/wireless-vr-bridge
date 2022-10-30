@@ -22,7 +22,19 @@ Initially, the VR client will be developed for standalone headsets only (Quest 2
 
 - Clone this repository with ``--recurse-submodules`` flag
     - If you forgot the flag, you can run `git submodule update --init` instead.
-- Install a C++ compiler (clang and Ninja are recommended)
 - Install the [OpenVR SDK](https://github.com/ValveSoftware/openvr/releases)
   - If it is not at a standard location, you can extract the zip and set the ``OPENVR_SDK_PATH`` environment variable to the root directory.
   - On Linux, you can also extract the headers in `/usr/include` and the corresponding lib in `/usr/lib` or `/usr/lib64`.
+- Install SteamVR
+- Run CMake a first time
+- To allow SteamVR to find the driver, run
+  - ``python ./server/wvb_driver_control.py enable --driver_dir ./<build dir>/wvb_server``
+  - Run ``python ./server/wvb_driver_control.py status`` to check if it worked
+  - Run ``python ./server/wvb_driver_control.py disable`` to remove the driver
+
+## Notes
+
+- On Windows, the driver **must** be compiled using MSVC, otherwise SteamVR won't be able to load it.
+- To access SteamVR logs:
+  - Right click on SteamVR window
+  - Developer > Web console

@@ -1,12 +1,13 @@
-#include "wvb_server/server.h"
+#include "wvb_client/client.h"
 
-namespace wvb::server
+
+namespace wvb::client
 {
     // =======================================================================================
     // =                                       Structs                                       =
     // =======================================================================================
 
-    struct Server::Data
+    struct Client::Data
     {
         uint16_t port;
     };
@@ -15,9 +16,9 @@ namespace wvb::server
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    Server::Server(uint16_t port) : m_data(new Data {port}) {}
+    Client::Client(uint16_t port) : m_data(new Data {port}) {}
 
-    Server::~Server()
+    Client::~Client()
     {
         if (m_data != nullptr)
         {
@@ -26,5 +27,4 @@ namespace wvb::server
         }
     }
 
-    void Server::run() {}
-} // namespace wvb::server
+} // namespace wvb::Client

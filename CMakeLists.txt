@@ -43,5 +43,11 @@ add_subdirectory(external)
 ###                         LIBRARIES                          ###
 ##################################################################
 
+# Common library
+add_subdirectory(common)
+
 # WVB server
 add_subdirectory(wvb_server)
+
+# WVB client
+add_subdirectory(wvb_client)

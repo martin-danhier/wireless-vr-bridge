@@ -4,6 +4,7 @@
 #include <openvr_driver.h>
 #include <system_error>
 #include <thread>
+#include <wvb_common/vr_structs.h>
 
 // Inspired by official driver sample
 // https://github.com/ValveSoftware/openvr/blob/master/samples/driver_sample/driver_sample.cpp
@@ -157,10 +158,14 @@ namespace wvb::server
     // ---=== VirtualDevice ===---
 
     VirtualHMDDriver::VirtualHMDDriver()
-    = default;
+    {
+        // TODO
+    }
 
     vr::EVRInitError VirtualHMDDriver::Activate(uint32_t object_id)
     {
+
+
         return vr::VRInitError_None;
     }
 
@@ -233,7 +238,13 @@ namespace wvb::server
 // =======================================================================================
 
 /**
- * Entry point of the driver: called by the runtime to get the driver interfaces.
+ * Entry point of the driver: called by SteamVR on startup to get the list of available drivers.
+ *
+ * Depending on the connected USB devices, it will load the appropriate driver. In our case, there is no
+ * USB device, so the driver is always loaded.
+ *
+ * TODO in the future, it may be useful to seperate the main server process from the driver process, so that it can be loaded
+ * only when the server application is running. This would require communication between the two processes.
  */
 HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
 {

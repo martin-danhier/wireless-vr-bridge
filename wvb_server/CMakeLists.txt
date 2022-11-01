@@ -19,7 +19,6 @@ set(wvb_server_header_dir
 ###                         CREATE LIB                         ###
 ##################################################################
 
-# Output should be in ./out directory
 add_library(wvb_server SHARED ${wvb_server_sources} ${wvb_server_headers})
 target_sources(wvb_server PRIVATE ${wvb_server_sources})
 target_include_directories(wvb_server PUBLIC ${wvb_server_header_dir})
@@ -30,6 +29,7 @@ target_include_directories(wvb_server PUBLIC ${wvb_server_header_dir})
 
 target_link_libraries(wvb_server
         openvr
+        wvb_common
         )
 
 ##################################################################

@@ -8,7 +8,6 @@ namespace vr
 
 namespace wvb::server
 {
-
     class DriverLogger
     {
       private:

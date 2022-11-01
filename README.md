@@ -28,9 +28,9 @@ Initially, the VR client will be developed for standalone headsets only (Quest 2
 - Install SteamVR
 - Run CMake a first time
 - To allow SteamVR to find the driver, run
-  - ``python ./server/wvb_driver_control.py enable --driver_dir ./<build dir>/wvb_server``
-  - Run ``python ./server/wvb_driver_control.py status`` to check if it worked
-  - Run ``python ./server/wvb_driver_control.py disable`` to remove the driver
+  - ``python ./wvb_driver/wvb_driver_control.py enable --driver_dir ./<build dir>/wvb_driver``
+  - Run ``python ./wvb_driver/wvb_driver_control.py status`` to check if it worked
+  - Run ``python ./wvb_driver/wvb_driver_control.py disable`` to remove the driver
 
 ## Notes
 
@@ -38,3 +38,12 @@ Initially, the VR client will be developed for standalone headsets only (Quest 2
 - To access SteamVR logs:
   - Right click on SteamVR window
   - Developer > Web console
+
+## Architecture
+
+The project is constituted of four main components:
+
+- **Common library**: contains the logic that is used in multiple other components
+- **WVB Driver**: OpenVR interfacing with SteamVR. Watches for the server application and connects to it.
+- **WVB Server**: Application handling the communication between the driver and the client.
+- **WVB Client**: Application communicating with the server and displaying the content on the VR headset.

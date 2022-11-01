@@ -6,7 +6,7 @@ namespace vr
     class IVRDriverLog;
 }
 
-namespace wvb::server
+namespace wvb::driver
 {
     class DriverLogger
     {

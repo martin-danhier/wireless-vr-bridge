@@ -1,4 +1,4 @@
-#include <wvb_server/driver_logger.h>
+#include <wvb_driver/driver_logger.h>
 
 #include <cstring>
 #include <openvr_driver.h>
@@ -19,7 +19,7 @@
 #error "Unsupported Platform."
 #endif
 
-namespace wvb::server
+namespace wvb::driver
 {
     // =======================================================================================
     // =                                       Defines                                       =
@@ -250,11 +250,11 @@ HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCo
 {
     if (strcmp(vr::IVRWatchdogProvider_Version, pInterfaceName) == 0)
     {
-        return &wvb::server::WATCHDOG_DRIVER;
+        return &wvb::driver::WATCHDOG_DRIVER;
     }
     if (strcmp(vr::IServerTrackedDeviceProvider_Version, pInterfaceName) == 0)
     {
-        return &wvb::server::SERVER_DRIVER;
+        return &wvb::driver::SERVER_DRIVER;
     }
 
     if (pReturnCode)

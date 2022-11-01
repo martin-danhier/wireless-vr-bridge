@@ -1,0 +1,11 @@
+#include <wvb_server/server.h>
+
+using namespace wvb::server;
+
+// Entry point of the server app
+int main()
+{
+    Server server;
+
+    return 0;
+}

@@ -46,6 +46,9 @@ add_subdirectory(external)
 # Common library
 add_subdirectory(common)
 
+# WVB driver
+add_subdirectory(wvb_driver)
+
 # WVB server
 add_subdirectory(wvb_server)
 

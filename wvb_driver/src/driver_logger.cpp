@@ -1,10 +1,10 @@
-#include "wvb_server/driver_logger.h"
+#include "wvb_driver/driver_logger.h"
 
 #include <cstdarg>
 #include <cstring>
 #include <openvr_driver.h>
 
-namespace wvb::server
+namespace wvb::driver
 {
     void log_inner(vr::IVRDriverLog *log_file, const char *prefix, const char *format, va_list args)
     {

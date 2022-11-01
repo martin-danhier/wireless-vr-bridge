@@ -16,10 +16,10 @@ set(wvb_server_header_dir
         )
 
 ##################################################################
-###                         CREATE LIB                         ###
+###                      CREATE EXECUTABLE                     ###
 ##################################################################
 
-add_library(wvb_server SHARED ${wvb_server_sources} ${wvb_server_headers})
+add_executable(wvb_server ${wvb_server_sources} ${wvb_server_headers})
 target_sources(wvb_server PRIVATE ${wvb_server_sources})
 target_include_directories(wvb_server PUBLIC ${wvb_server_header_dir})
 
@@ -28,26 +28,5 @@ target_include_directories(wvb_server PUBLIC ${wvb_server_header_dir})
 ##################################################################
 
 target_link_libraries(wvb_server
-        openvr
         wvb_common
-        )
-
-##################################################################
-###                    DRIVER REQUIREMENTS                     ###
-##################################################################
-
-# Copy the driver manifest to the build directory
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/driver.vrdrivermanifest
-        ${CMAKE_CURRENT_BINARY_DIR}/driver.vrdrivermanifest
-        COPYONLY
-)
-
-set_target_properties(wvb_server PROPERTIES
-        # Set prefix required by OpenVR: driver_<driver_name>
-        # On Linux, there is no "lib" prefix
-        PREFIX "driver_"
-        # Generate it in bin/<platform> subdirectory
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/${openvr_platform_name}"
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/${openvr_platform_name}"
         )

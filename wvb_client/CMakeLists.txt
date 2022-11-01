@@ -2,14 +2,9 @@
 ###                          SOURCES                           ###
 ##################################################################
 
-# Take all files in the source directory
-file(GLOB_RECURSE wvb_client_sources
-        "src/*.cpp"
-        )
-# Take all files in the include directory
-file(GLOB_RECURSE wvb_client_headers
-        "include/*.h"
-        "include/*.hpp"
+# Source files
+set(wvb_client_sources
+        "src/client.cpp"
         )
 set(wvb_client_header_dir
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -19,14 +14,23 @@ set(wvb_client_header_dir
 ###                      CREATE EXECUTABLE                     ###
 ##################################################################
 
-add_executable(wvb_client ${wvb_client_sources} ${wvb_client_headers})
-target_sources(wvb_client PRIVATE ${wvb_client_sources})
-target_include_directories(wvb_client PUBLIC ${wvb_client_header_dir})
+add_library(wvb_client_lib STATIC ${wvb_client_sources} ${wvb_client_headers})
+target_sources(wvb_client_lib PRIVATE ${wvb_client_sources})
+target_include_directories(wvb_client_lib PUBLIC ${wvb_client_header_dir})
 
 ##################################################################
 ###                         LINK LIBS                          ###
 ##################################################################
 
-target_link_libraries(wvb_client
+target_link_libraries(wvb_client_lib
         wvb_common
+        )
+
+##################################################################
+###                        EXECUTABLE                          ###
+##################################################################
+
+add_executable(wvb_client src/main.cpp)
+target_link_libraries(wvb_client
+        wvb_client_lib
         )

@@ -1,0 +1,3 @@
+[submodule "external/testing_framework"]
+	path = external/testing_framework
+	url = https://github.com/martin-danhier/testing_framework.git

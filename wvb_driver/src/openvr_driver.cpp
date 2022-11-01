@@ -6,8 +6,9 @@
 #include <thread>
 #include <wvb_common/vr_structs.h>
 
-// Inspired by official driver sample
+// Inspired by official driver samples
 // https://github.com/ValveSoftware/openvr/blob/master/samples/driver_sample/driver_sample.cpp
+// https://github.com/ValveSoftware/virtual_display
 
 #if defined(_WIN32)
 #define HMD_DLL_EXPORT extern "C" [[maybe_unused]] __declspec(dllexport)

@@ -80,3 +80,9 @@ add_library(openvr INTERFACE)
 target_include_directories(openvr INTERFACE ${openvr_include_dir})
 target_link_directories(openvr INTERFACE ${openvr_lib_dir})
 target_link_libraries(openvr INTERFACE openvr_api)
+
+##################################################################
+###                      TESTING FRAMEWORK                     ###
+##################################################################
+
+add_subdirectory(testing_framework)

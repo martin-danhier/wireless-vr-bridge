@@ -19,8 +19,17 @@ set(wvb_common_header_dir
 ###                         CREATE LIB                         ###
 ##################################################################
 
-add_library(wvb_common INTERFACE ${wvb_common_sources} ${wvb_common_headers})
+add_library(wvb_common STATIC ${wvb_common_sources} ${wvb_common_headers})
 target_sources(wvb_common PRIVATE ${wvb_common_sources})
-target_include_directories(wvb_common INTERFACE ${wvb_common_header_dir})
+target_include_directories(wvb_common PUBLIC ${wvb_common_header_dir})
 
 set_target_properties(wvb_common PROPERTIES LINKER_LANGUAGE CXX)
+
+##################################################################
+###                         LINK LIBS                          ###
+##################################################################
+
+# On Linux, link to pthread
+if (UNIX AND NOT APPLE)
+    target_link_libraries(wvb_common pthread)
+endif ()

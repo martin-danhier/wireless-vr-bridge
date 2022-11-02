@@ -20,6 +20,11 @@
 #error "Unsupported Platform."
 #endif
 
+// If windows, it must be MSVC
+#if defined(_WIN32) and !defined(_MSC_VER)
+#error "On Windows, the driver must be compiled with MSVC. Otherwise, SteamVR won't be able to load it."
+#endif
+
 namespace wvb::driver
 {
     // =======================================================================================
@@ -239,7 +244,7 @@ namespace wvb::driver
 // =======================================================================================
 
 /**
- * Entry point of the driver: called by SteamVR on startup to get the list of available drivers.
+ * Entry point of the driver: called by SteamVR on startup to unsafe_get the list of available drivers.
  *
  * Depending on the connected USB devices, it will load the appropriate driver. In our case, there is no
  * USB device, so the driver is always loaded.

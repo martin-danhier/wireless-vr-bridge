@@ -4,6 +4,34 @@
 
 namespace wvb::server
 {
+    enum DriverConnectionState : uint32_t
+    {
+        /** The driver is not connected. The server is waiting for it to launch. */
+        AWAITING_DRIVER = 0,
+        /** The driver is connected. */
+        DRIVER_CONNECTED = 1,
+    };
+
+    enum ClientConnectionState : uint32_t
+    {
+        /** The client is not connected. The server is waiting for it to connect. */
+        AWAITING_CLIENT = 0,
+        /** The client is connected. */
+        CLIENT_CONNECTED = 1,
+    };
+
+    enum AppState : uint32_t
+    {
+        /** The server is not ready to run an app, typically because the client and driver are not both connected. */
+        NOT_READY = 0,
+        /** The server is ready to run an app, but is currently idling. */
+        READY = 1,
+        /** The server is currently running an app. */
+        RUNNING = 1,
+        /** Same as READY, except that a running app is paused. It can be resumed without restarting. */
+        STANDBY = 2,
+    };
+
     /**
      * The server is responsible for managing the connection to the client VR system.
      *
@@ -25,13 +53,10 @@ namespace wvb::server
         Server(const Server &other) = delete;
         ~Server();
 
-        /** Start listening for incoming connections.
-         *
-         * When a connection is established, the server will try to start the two-way data streaming.
+        /**
+         * Start the server state machine.
          * */
         void run();
 
-        /** Stop listening for incoming connections. */
-        // void stop();
     };
 } // namespace wvb::server

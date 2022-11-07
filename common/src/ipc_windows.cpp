@@ -5,13 +5,13 @@
 
 #include <windows.h>
 
-namespace wvb::_impl
+namespace wvb
 {
     // =======================================================================================
     // =                                 Structs and classes                                 =
     // =======================================================================================
 
-    struct SharedMemoryImpl::Data
+    struct _impl::SharedMemoryImpl::Data
     {
         HANDLE mutex        = nullptr;
         HANDLE file_mapping = nullptr;
@@ -19,11 +19,19 @@ namespace wvb::_impl
         void  *data         = nullptr;
     };
 
+    struct InterProcessEvent::Data
+    {
+        HANDLE event     = nullptr;
+        bool   is_sender = false;
+    };
+
     // =======================================================================================
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
+    // Shared Memory
+
+    _impl::SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
     {
         // Create mutex
         m_data->mutex = CreateMutexA(nullptr, FALSE, mutex_name);
@@ -49,7 +57,7 @@ namespace wvb::_impl
         }
     }
 
-    SharedMemoryImpl::~SharedMemoryImpl()
+    _impl::SharedMemoryImpl::~SharedMemoryImpl()
     {
         if (m_data != nullptr)
         {
@@ -70,7 +78,7 @@ namespace wvb::_impl
         }
     }
 
-    void *SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
+    void *_impl::SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
     {
         if (!is_valid())
         {
@@ -91,12 +99,81 @@ namespace wvb::_impl
         }
     }
 
-    void SharedMemoryImpl::unsafe_release() const
+    void _impl::SharedMemoryImpl::unsafe_release() const
     {
         // Release the mutex
         ReleaseMutex(m_data->mutex);
     }
 
-} // namespace wvb::_impl
+    // Inter Process Event
+
+    InterProcessEvent::InterProcessEvent(const char *event_name, bool is_sender) : m_data(new Data)
+    {
+        m_data->is_sender = is_sender;
+
+        // Create the event
+        m_data->event = CreateEventA(nullptr, TRUE, FALSE, event_name);
+
+        // If it failed, clean up and return
+        if (m_data->event == nullptr)
+        {
+            this->~InterProcessEvent();
+            return;
+        }
+    }
+
+    InterProcessEvent::~InterProcessEvent()
+    {
+        if (m_data != nullptr)
+        {
+            if (m_data->event != nullptr)
+            {
+                CloseHandle(m_data->event);
+                m_data->event = nullptr;
+            }
+
+            delete m_data;
+            m_data = nullptr;
+        }
+    }
+
+    void InterProcessEvent::trigger() const
+    {
+        SetEvent(m_data->event);
+    }
+
+    bool InterProcessEvent::wait(uint32_t timeout_ms) const
+    {
+        auto res = WaitForSingleObject(m_data->event, timeout_ms);
+
+        // Return true if the event was triggered
+        auto triggered = res == WAIT_OBJECT_0;
+
+        // If we are the sender, reset the event
+        if (triggered)
+        {
+            ResetEvent(m_data->event);
+        }
+
+        return triggered;
+    }
+
+    bool InterProcessEvent::is_triggered() const
+    {
+        // Check if the event is triggered, without waiting and without resetting it
+        auto res = WaitForSingleObject(m_data->event, 0);
+
+        // Return true if the event was triggered
+        return res == WAIT_OBJECT_0;
+    }
+
+    void InterProcessEvent::reset() const
+    {
+        ResetEvent(m_data->event);
+    }
+
+
+
+} // namespace wvb
 
 #endif

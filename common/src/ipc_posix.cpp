@@ -9,7 +9,7 @@
 #include <semaphore.h>
 #include <sys/shm.h>
 
-namespace wvb::_impl
+namespace wvb
 {
     // =======================================================================================
     // =                                      Constants                                      =
@@ -21,18 +21,28 @@ namespace wvb::_impl
     // =                                 Structs and classes                                 =
     // =======================================================================================
 
-    struct SharedMemoryImpl::Data
+    struct _impl::SharedMemoryImpl::Data
     {
-        int32_t shared_memory_id = INVALID_HANDLE_VALUE;
-        sem_t  *semaphore        = SEM_FAILED;
+        int32_t     shared_memory_id = INVALID_HANDLE_VALUE;
+        sem_t      *semaphore        = SEM_FAILED;
         const char *semaphore_name   = nullptr;
-        size_t  size             = 0;
-        void   *data             = nullptr;
+        size_t      size             = 0;
+        void       *data             = nullptr;
+    };
+
+    struct InterProcessEvent::Data
+    {
+        // Implement using semaphores
+        sem_t      *semaphore      = SEM_FAILED;
+        bool        is_sender      = false;
+        const char *semaphore_name = nullptr;
     };
 
     // =======================================================================================
     // =                                   Implementation                                    =
     // =======================================================================================
+
+    // Shared Memory
 
     bool sem_timed_wait(sem_t *sem, uint32_t timeout_ms)
     {
@@ -45,10 +55,10 @@ namespace wvb::_impl
         return sem_timedwait(sem, &timeout) == 0;
     }
 
-    SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
+    _impl::SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
     {
         // Create semaphore
-        m_data->semaphore = sem_open(mutex_name, O_CREAT, 0644, 1);
+        m_data->semaphore      = sem_open(mutex_name, O_CREAT, 0644, 1);
         m_data->semaphore_name = mutex_name;
         if (m_data->semaphore == SEM_FAILED)
         {
@@ -107,7 +117,7 @@ namespace wvb::_impl
         m_data->data = shmat(m_data->shared_memory_id, nullptr, 0);
     }
 
-    SharedMemoryImpl::~SharedMemoryImpl()
+    _impl::SharedMemoryImpl::~SharedMemoryImpl()
     {
         if (m_data != nullptr)
         {
@@ -133,26 +143,20 @@ namespace wvb::_impl
         }
     }
 
-    void *SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
+    void *_impl::SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
     {
         if (m_data != nullptr)
         {
             // Unlimited wait
-            if (timeout_ms == UINT32_MAX)
+            if (timeout_ms == NO_TIMEOUT)
             {
-                bool wait = true;
-
                 int32_t result = 0;
-                while (wait)
+                do
                 {
                     result = sem_wait(m_data->semaphore);
 
                     // Try again if it is interrupted
-                    if (result != EINTR)
-                    {
-                        wait = false;
-                    }
-                }
+                } while (result == EINTR);
 
                 if (result == 0)
                 {
@@ -171,7 +175,7 @@ namespace wvb::_impl
         return nullptr;
     }
 
-    void SharedMemoryImpl::unsafe_release() const
+    void _impl::SharedMemoryImpl::unsafe_release() const
     {
         if (m_data == nullptr)
         {
@@ -181,6 +185,123 @@ namespace wvb::_impl
         sem_post(m_data->semaphore);
     }
 
-} // namespace wvb::_impl
+    // Inter Process Event
+
+    InterProcessEvent::InterProcessEvent(const char *name, bool is_sender) : m_data(new Data)
+    {
+        m_data->is_sender      = is_sender;
+        m_data->semaphore_name = name;
+
+        // Create semaphore
+        m_data->semaphore = sem_open(name, O_CREAT, 0644, 0);
+        if (m_data->semaphore == SEM_FAILED)
+        {
+            this->~InterProcessEvent();
+            return;
+        }
+
+        // Ensure that the semaphore is valid
+        // To prevent problems, only do it from the sender side
+        if (is_sender)
+        {
+            int32_t value = 0;
+            sem_getvalue(m_data->semaphore, &value);
+
+            if (value > 1)
+            {
+                // Lock it until it reaches 0
+                while (value > 0)
+                {
+                    sem_wait(m_data->semaphore);
+                    sem_getvalue(m_data->semaphore, &value);
+                }
+            }
+            else if (value == 1)
+            {
+                // We want the semaphore to be in a locked state such that the receiver can wait.
+                // If the semaphore is unlocked, we need to lock it
+                sem_wait(m_data->semaphore);
+            }
+        }
+    }
+
+    InterProcessEvent::~InterProcessEvent()
+    {
+        if (m_data != nullptr)
+        {
+            if (m_data->semaphore != SEM_FAILED)
+            {
+                sem_close(m_data->semaphore);
+                // Since events are unidirectional, only the sender should delete the semaphore
+                if (m_data->is_sender)
+                {
+                    sem_unlink(m_data->semaphore_name);
+                }
+                m_data->semaphore = SEM_FAILED;
+            }
+
+            delete m_data;
+            m_data = nullptr;
+        }
+    }
+
+    bool InterProcessEvent::wait(uint32_t timeout_ms) const
+    {
+        if (m_data == nullptr)
+        {
+            return false;
+        }
+
+        // Unlimited wait
+        if (timeout_ms == NO_TIMEOUT)
+        {
+            int32_t result = 0;
+            do
+            {
+                result = sem_wait(m_data->semaphore);
+
+                // Try again if it is interrupted
+            } while (result == EINTR);
+
+            return result == 0;
+        }
+        // Timed wait
+        else
+        {
+            return sem_timed_wait(m_data->semaphore, timeout_ms);
+        }
+    }
+
+    void InterProcessEvent::trigger() const
+    {
+        if (m_data == nullptr)
+        {
+            return;
+        }
+
+        sem_post(m_data->semaphore);
+    }
+
+    bool InterProcessEvent::is_triggered() const
+    {
+        if (m_data == nullptr)
+        {
+            return false;
+        }
+
+        int32_t value = 0;
+        sem_getvalue(m_data->semaphore, &value);
+        return value > 0;
+    }
+
+    void InterProcessEvent::reset() const
+    {
+        if (is_triggered())
+        {
+            sem_wait(m_data->semaphore);
+        }
+    }
+
+} // namespace wvb
 
 #endif

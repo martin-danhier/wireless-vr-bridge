@@ -1,10 +1,10 @@
+#include <wvb_common/server_shared_state.h>
 #include <wvb_driver/driver_logger.h>
 
 #include <cstring>
 #include <openvr_driver.h>
 #include <system_error>
 #include <thread>
-#include <wvb_common/vr_structs.h>
 
 // Inspired by official driver samples
 // https://github.com/ValveSoftware/openvr/blob/master/samples/driver_sample/driver_sample.cpp
@@ -31,7 +31,7 @@ namespace wvb::driver
     // =                                       Defines                                       =
     // =======================================================================================
 
-#define WATCHDOG_WAKEUP_INTERVAL_MS 5000
+#define WATCHDOG_WAKEUP_INTERVAL_MS  5000
 #define VIRTUAL_DEVICE_SERIAL_NUMBER "WVB-VirtualHMD"
 #define VIRTUAL_DEVICE_MODEL_NUMBER  "wireless_vr_bridge virtual device"
 
@@ -83,8 +83,9 @@ namespace wvb::driver
     class ServerDriver : public vr::IServerTrackedDeviceProvider
     {
       private:
-        DriverLogger         m_logger {nullptr};
-        VirtualHMDDriver    *m_device_driver = nullptr;
+        DriverLogger             m_logger {nullptr};
+        VirtualHMDDriver        *m_device_driver = nullptr;
+        ServerDriverSharedMemory m_shared_memory;
 
       public:
         vr::EVRInitError Init(vr::IVRDriverContext *driver_context) override;
@@ -170,8 +171,6 @@ namespace wvb::driver
 
     vr::EVRInitError VirtualHMDDriver::Activate(uint32_t object_id)
     {
-
-
         return vr::VRInitError_None;
     }
 
@@ -188,7 +187,8 @@ namespace wvb::driver
         return pose;
     }
 
-    void VirtualHMDDriver::Present(const vr::PresentInfo_t *present_info, uint32_t present_info_size) {
+    void VirtualHMDDriver::Present(const vr::PresentInfo_t *present_info, uint32_t present_info_size)
+    {
         frame_number = present_info->nFrameId;
         frame_time   = present_info->flVSyncTimeInSeconds;
     }
@@ -210,8 +210,18 @@ namespace wvb::driver
         VR_INIT_SERVER_DRIVER_CONTEXT(driver_context);
         m_logger = DriverLogger(vr::VRDriverLog());
 
-        m_device_driver = new VirtualHMDDriver();
-        vr::VRServerDriverHost()->TrackedDeviceAdded(VIRTUAL_DEVICE_SERIAL_NUMBER, vr::TrackedDeviceClass_HMD, m_device_driver);
+        // Init shared memory and change driver state
+        m_logger.log("Server driver loaded");
+
+        m_shared_memory = ServerDriverSharedMemory(WVB_SERVER_DRIVER_MUTEX_NAME, WVB_SERVER_DRIVER_MEMORY_NAME);
+        {
+            auto data          = m_shared_memory.lock();
+            data->driver_state = DriverState::AWAITING_SERVER;
+        }
+
+        //        m_device_driver = new VirtualHMDDriver();
+        //        vr::VRServerDriverHost()->TrackedDeviceAdded(VIRTUAL_DEVICE_SERIAL_NUMBER, vr::TrackedDeviceClass_HMD,
+        //        m_device_driver);
 
         m_logger.log("Server driver initialized");
         return vr::VRInitError_None;
@@ -221,6 +231,11 @@ namespace wvb::driver
     {
         if (m_device_driver != nullptr)
         {
+            {
+                auto data          = m_shared_memory.lock();
+                data->driver_state = DriverState::NOT_RUNNING;
+            }
+
             delete m_device_driver;
             m_device_driver = nullptr;
         }
@@ -237,7 +252,7 @@ namespace wvb::driver
         }
     }
 
-} // namespace wvb::server
+} // namespace wvb::driver
 
 // =======================================================================================
 // =                                     Driver Factory                                  =

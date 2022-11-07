@@ -27,6 +27,62 @@ set(CMAKE_CXX_STANDARD 20)
 # Enable tests
 set(enable_tests 1)
 
+##################################################################
+###                       APPLY SETTINGS                       ###
+##################################################################
+
+# On a CI, override the value of interactive with 0
+# We know that we are on a CI if the CI environment variable is set
+if (DEFINED ENV{CI})
+    message(STATUS "Continuous integration detected, disabling interactive mode")
+    set(interactive 0)
+    # Also disable sanitizers
+    set(enable_asan 0)
+    set(enable_ubsan 0)
+endif ()
+
+# Windows must be compiled with MSVC
+if (WIN32 AND NOT MSVC)
+    message(FATAL_ERROR "On Windows, only MSVC is supported due to a SteamVR requirement.")
+endif()
+
+# Enable sanitizers if variable is 1
+if (${enable_asan} STREQUAL "1")
+    message(STATUS "Enabling address sanitizer")
+
+    # MSVC syntax is a bit different
+    if (MSVC)
+        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+    else ()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    endif ()
+endif ()
+
+if (${enable_ubsan} STREQUAL "1" AND NOT MSVC)
+    message(STATUS "Enabling undefined behavior sanitizer")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+endif ()
+
+# Enable or not interactivity
+if (${interactive} STREQUAL "1")
+    add_compile_definitions(
+            INTERACTIVE
+    )
+else ()
+    add_compile_definitions(
+            NO_INTERACTIVE
+    )
+endif ()
+
+# Add -fPIC flag for shared libraries on Linux
+if (UNIX AND NOT APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif ()
+
 # Set unused parameters as warnings instead of errors
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-error=unused-parameter)

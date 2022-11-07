@@ -1,6 +1,6 @@
 {
 	"alwaysActivate": true,
-	"name" : "wvb_server",
+	"name" : "wvb_driver",
 	"directory" : "",
 	"resourceOnly" : false,
 	"hmd_presence" : ["*.*"]

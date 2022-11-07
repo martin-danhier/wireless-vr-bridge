@@ -4,8 +4,10 @@
 
 #include "wvb_common/ipc.h"
 
-#include <sys/sem.h>
+#include <fcntl.h>
+#include <semaphore.h>
 #include <sys/shm.h>
+#include <iostream>
 
 namespace wvb::_impl
 {
@@ -19,10 +21,10 @@ namespace wvb::_impl
     // =                                 Structs and classes                                 =
     // =======================================================================================
 
-    struct SharedDataImpl::Data
+    struct SharedMemoryImpl::Data
     {
         int32_t shared_memory_id = INVALID_HANDLE_VALUE;
-        int32_t semaphore_id     = INVALID_HANDLE_VALUE;
+        sem_t  *semaphore        = SEM_FAILED;
         size_t  size             = 0;
         void   *data             = nullptr;
     };
@@ -31,25 +33,67 @@ namespace wvb::_impl
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    SharedDataImpl::SharedDataImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
-    {
-        // Convert names to key
-        key_t semaphore_key     = ftok(mutex_name, 1);
-        key_t shared_memory_key = ftok(memory_name, 1);
+    bool sem_timed_wait(sem_t *sem, uint32_t timeout_ms) {
+        timespec timeout {};
+        clock_gettime(CLOCK_REALTIME, &timeout);
+        timeout.tv_sec += timeout_ms / 1000;
+        timeout.tv_nsec += (timeout_ms % 1000) * 1000000;
 
+        // Wait
+        return sem_timedwait(sem, &timeout) == 0;
+    }
+
+    SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
+    {
         // Create semaphore
-        m_data->semaphore_id = semget(semaphore_key, 1, IPC_CREAT | 0666);
-        if (m_data->semaphore_id == -1)
+        m_data->semaphore = sem_open(mutex_name, O_CREAT, 0644, 1);
+        if (m_data->semaphore == SEM_FAILED)
         {
-            this->~SharedDataImpl();
+            this->~SharedMemoryImpl();
             return;
         }
+
+        // Ensure that the semaphore is valid
+        // It can be invalid in two cases:
+        // - it exists and has a non-binary value (e.g 2). Trivial to detect.
+        // - it exists and is stucked to 0 (for example if the previous process crashed).
+        //      Harder to detect: it could be another valid process that is using it.
+
+        // Non-binary detection
+        int32_t value;
+        auto    res = sem_getvalue(m_data->semaphore, &value);
+        if (res == 0 && (value != 0 && value != 1))
+        {
+            sem_close(m_data->semaphore);
+            sem_unlink(mutex_name);
+            // Recreate it
+            m_data->semaphore = sem_open(mutex_name, O_CREAT, 0644, 1);
+            if (m_data->semaphore == SEM_FAILED)
+            {
+                this->~SharedMemoryImpl();
+                return;
+            }
+        }
+
+        // Stuck detection
+        // The idea is to try to lock the semaphore. Since we are in a real time program, well-behaved processes will not lock it for
+        // more than a few milliseconds. If we can't lock it in a reasonable amount of time, we assume that the semaphore is stucked,
+        // and we can recreate it.
+        sem_timed_wait(m_data->semaphore, 100);
+        // If it worked, then we can unlock it and proceed
+        // If it didn't work, it means that it is stucked. We thus also need to unlock it.
+        // We thus need to unlock no matter what.
+        sem_post(m_data->semaphore);
+
+
+        // Convert name to key
+        key_t shared_memory_key = ftok(memory_name, 1);
 
         // Create shared memory
         m_data->shared_memory_id = shmget(shared_memory_key, size, IPC_CREAT | 0666);
         if (m_data->shared_memory_id == INVALID_HANDLE_VALUE)
         {
-            this->~SharedDataImpl();
+            this->~SharedMemoryImpl();
             return;
         }
 
@@ -58,7 +102,7 @@ namespace wvb::_impl
         m_data->data = shmat(m_data->shared_memory_id, nullptr, 0);
     }
 
-    SharedDataImpl::~SharedDataImpl()
+    SharedMemoryImpl::~SharedMemoryImpl()
     {
         if (m_data != nullptr)
         {
@@ -72,10 +116,10 @@ namespace wvb::_impl
                 m_data->shared_memory_id = -1;
             }
 
-            if (m_data->semaphore_id != -1)
+            if (m_data->semaphore != SEM_FAILED)
             {
-                semctl(m_data->semaphore_id, 0, IPC_RMID);
-                m_data->semaphore_id = -1;
+                sem_close(m_data->semaphore);
+                m_data->semaphore = SEM_FAILED;
             }
 
             delete m_data;
@@ -83,46 +127,52 @@ namespace wvb::_impl
         }
     }
 
-    void *SharedDataImpl::unsafe_lock(uint32_t timeout_ms) const
+    void *SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
     {
-        if (m_data == nullptr)
+        if (m_data != nullptr)
         {
-            return nullptr;
-        }
+            // Unlimited wait
+            if (timeout_ms == UINT32_MAX)
+            {
+                bool wait = true;
 
-        // Timespec is used to specify timeout
-        struct sembuf semaphore_operation
-        {
-            0, -1, 0
-        };
-        const struct timespec timeout
-        {
-            .tv_sec = 0, .tv_nsec = timeout_ms * 1000000
-        };
-        auto result = semtimedop(m_data->semaphore_id, &semaphore_operation, 1, &timeout);
+                int32_t result = 0;
+                while (wait)
+                {
+                    result = sem_wait(m_data->semaphore);
 
-        // Return the data when the semaphore is acquired
-        if (result == 0)
-        {
-            return m_data->data;
+                    // Try again if it is interrupted
+                    if (result != EINTR)
+                    {
+                        wait = false;
+                    }
+                }
+
+                if (result == 0)
+                {
+                    return m_data->data;
+                }
+            }
+            // Timed wait
+            else
+            {
+                if (sem_timed_wait(m_data->semaphore, timeout_ms))
+                {
+                    return m_data->data;
+                }
+            }
         }
-        else {
-            return nullptr;
-        }
+        return nullptr;
     }
 
-    void SharedDataImpl::unsafe_release() const {
+    void SharedMemoryImpl::unsafe_release() const
+    {
         if (m_data == nullptr)
         {
             return;
         }
 
-        // Release the semaphore
-        struct sembuf semaphore_operation
-        {
-            0, 1, 0
-        };
-        semop(m_data->semaphore_id, &semaphore_operation, 1);
+        sem_post(m_data->semaphore);
     }
 
 } // namespace wvb::_impl

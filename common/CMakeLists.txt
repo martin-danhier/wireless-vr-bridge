@@ -31,5 +31,5 @@ set_target_properties(wvb_common PROPERTIES LINKER_LANGUAGE CXX)
 
 # On Linux, link to pthread
 if (UNIX AND NOT APPLE)
-    target_link_libraries(wvb_common pthread)
+    target_link_libraries(wvb_common pthread rt)
 endif ()

@@ -11,29 +11,30 @@ namespace wvb::_impl
     // =                                 Structs and classes                                 =
     // =======================================================================================
 
-    struct SharedDataImpl::Data
+    struct SharedMemoryImpl::Data
     {
         HANDLE mutex        = nullptr;
         HANDLE file_mapping = nullptr;
         size_t size         = 0;
-        void *data          = nullptr;
+        void  *data         = nullptr;
     };
 
     // =======================================================================================
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    SharedDataImpl::SharedDataImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
+    SharedMemoryImpl::SharedMemoryImpl(size_t size, const char *mutex_name, const char *memory_name) : m_data(new Data)
     {
         // Create mutex
         m_data->mutex = CreateMutexA(nullptr, FALSE, mutex_name);
         // Create the file mapping using the system page file to avoid physical memory usage.
         m_data->file_mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, size, memory_name);
+        bool created         = GetLastError() != ERROR_ALREADY_EXISTS;
 
         // If it failed, clean up and return
         if (m_data->file_mapping == nullptr)
         {
-            this->~SharedDataImpl();
+            this->~SharedMemoryImpl();
             return;
         }
 
@@ -41,9 +42,14 @@ namespace wvb::_impl
         m_data->size = size;
         m_data->data = MapViewOfFile(m_data->file_mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
 
+        // If it was just created, zero the memory
+        if (created)
+        {
+            memset(m_data->data, 0, size);
+        }
     }
 
-    SharedDataImpl::~SharedDataImpl()
+    SharedMemoryImpl::~SharedMemoryImpl()
     {
         if (m_data != nullptr)
         {
@@ -64,9 +70,10 @@ namespace wvb::_impl
         }
     }
 
-    void* SharedDataImpl::unsafe_lock(uint32_t timeout_ms) const
+    void *SharedMemoryImpl::unsafe_lock(uint32_t timeout_ms) const
     {
-        if (!is_valid()) {
+        if (!is_valid())
+        {
             return nullptr;
         }
 
@@ -84,12 +91,12 @@ namespace wvb::_impl
         }
     }
 
-    void SharedDataImpl::unsafe_release() const
+    void SharedMemoryImpl::unsafe_release() const
     {
         // Release the mutex
         ReleaseMutex(m_data->mutex);
     }
 
-} // namespace wvb
+} // namespace wvb::_impl
 
 #endif

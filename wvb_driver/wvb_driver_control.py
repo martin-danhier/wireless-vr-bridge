@@ -97,7 +97,7 @@ def disable(steamvr_dir):
     vrpathreg = vrpathreg_path(steamvr_dir)
 
     # Disable the driver
-    process = subprocess.run([vrpathreg, "removedriverswithname", "wvb_server"], check=True)
+    process = subprocess.run([vrpathreg, "removedriverswithname", "wvb_driver"], check=True)
 
     if process.returncode == 0:
         print("All WVB drivers disabled.")

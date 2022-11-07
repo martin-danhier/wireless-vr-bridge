@@ -30,7 +30,8 @@ TEST
     sem_unlink(MUTEX_NAME);
     sem_t *sem = sem_open(MUTEX_NAME, O_CREAT, 0644, 1);
     // To test stucked semaphore, lock it
-    sem_wait(sem);
+//    sem_wait(sem);
+
     sem_close(sem);
 #elif _WIN32
     // Get mutex
@@ -50,6 +51,22 @@ TEST
             wvb::SharedMemory<SharedState> shared_data(MUTEX_NAME, MEMORY_NAME);
             EXPECT_TRUE(shared_data.is_valid());
 
+#ifdef __linux__
+            // On Linux, a lock is done during the creation of the shared memory object to ensure that the semaphore is valid
+            // We need an extra lock here to test the semaphore so that they are synchronized for our expected test results
+            // In a real world scenario, it doesn't really matter if there is an additional lock
+            {
+                auto lock = shared_data.lock();
+                EXPECT_TRUE(lock.is_valid());
+                // wait so that the other thread starts, and wait during the initialization
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+            // Then sleep to be sure thread 2 manages to finish initialization.
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            // Thread 2 begins now
+#endif
+            std::cout << "Thread 1: start\n";
+
             // Lock the data
             {
                 auto locked_data = shared_data.lock();
@@ -57,7 +74,7 @@ TEST
                 locked_data->value = 42;
 
                 // Sleep for a while before unlocking
-                std::this_thread::sleep_for(std::chrono::milliseconds(40));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
                 EXPECT_EQ(locked_data->value, 42);
             }
@@ -85,14 +102,17 @@ TEST
         [&]()
         {
             // Wait
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
             // Create a shared data object
             wvb::SharedMemory<SharedState> shared_data(MUTEX_NAME, MEMORY_NAME);
             EXPECT_TRUE(shared_data.is_valid());
 
+
             // Wait a bit before locking so that we are sure that t1 has locked the data
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+            std::cout << "Thread 2: start\n";
 
             {
                 auto locked_data = shared_data.lock(5);

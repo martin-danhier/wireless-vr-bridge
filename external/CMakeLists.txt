@@ -57,6 +57,7 @@ find_path(openvr_lib_dir
         PATHS "$ENV{OPENVR_SDK_PATH}/lib/${openvr_platform_name}"
         "/usr/lib/x86_64-linux-gnu/"
         "/usr/lib64"
+        "/usr/lib"
         PATH_SUFFIXES ".lib" ".so" ".dll" ".dylib"
         )
 

@@ -5,9 +5,9 @@
 #include "wvb_common/ipc.h"
 
 #include <fcntl.h>
+#include <iostream>
 #include <semaphore.h>
 #include <sys/shm.h>
-#include <iostream>
 
 namespace wvb::_impl
 {
@@ -25,6 +25,7 @@ namespace wvb::_impl
     {
         int32_t shared_memory_id = INVALID_HANDLE_VALUE;
         sem_t  *semaphore        = SEM_FAILED;
+        const char *semaphore_name   = nullptr;
         size_t  size             = 0;
         void   *data             = nullptr;
     };
@@ -33,7 +34,8 @@ namespace wvb::_impl
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    bool sem_timed_wait(sem_t *sem, uint32_t timeout_ms) {
+    bool sem_timed_wait(sem_t *sem, uint32_t timeout_ms)
+    {
         timespec timeout {};
         clock_gettime(CLOCK_REALTIME, &timeout);
         timeout.tv_sec += timeout_ms / 1000;
@@ -47,6 +49,7 @@ namespace wvb::_impl
     {
         // Create semaphore
         m_data->semaphore = sem_open(mutex_name, O_CREAT, 0644, 1);
+        m_data->semaphore_name = mutex_name;
         if (m_data->semaphore == SEM_FAILED)
         {
             this->~SharedMemoryImpl();
@@ -59,32 +62,34 @@ namespace wvb::_impl
         // - it exists and is stucked to 0 (for example if the previous process crashed).
         //      Harder to detect: it could be another valid process that is using it.
 
-        // Non-binary detection
-        int32_t value;
-        auto    res = sem_getvalue(m_data->semaphore, &value);
-        if (res == 0 && (value != 0 && value != 1))
-        {
-            sem_close(m_data->semaphore);
-            sem_unlink(mutex_name);
-            // Recreate it
-            m_data->semaphore = sem_open(mutex_name, O_CREAT, 0644, 1);
-            if (m_data->semaphore == SEM_FAILED)
-            {
-                this->~SharedMemoryImpl();
-                return;
-            }
-        }
-
         // Stuck detection
         // The idea is to try to lock the semaphore. Since we are in a real time program, well-behaved processes will not lock it for
         // more than a few milliseconds. If we can't lock it in a reasonable amount of time, we assume that the semaphore is stucked,
-        // and we can recreate it.
-        sem_timed_wait(m_data->semaphore, 100);
-        // If it worked, then we can unlock it and proceed
-        // If it didn't work, it means that it is stucked. We thus also need to unlock it.
-        // We thus need to unlock no matter what.
-        sem_post(m_data->semaphore);
+        // and we can unlock it.
 
+        int32_t value;
+        auto    res = sem_getvalue(m_data->semaphore, &value);
+
+        if (res == 0 && value > 1)
+        {
+            // Lock it until it reaches 0
+            while (value > 1)
+            {
+                sem_wait(m_data->semaphore);
+                sem_getvalue(m_data->semaphore, &value);
+            }
+        }
+        else if (value == 0)
+        {
+            // If the value is 0, either another process is using the lock and will release it soon, or it is stucked.
+            // Try to lock it with a timeout
+            // If the active process releases it, it will lock successfully. We can then unlock it. (1 -> 0 -> 1)
+            // If the semaphore is stucked, it will time out. We thus need to unlock it.            (0 -> 1)
+            sem_timed_wait(m_data->semaphore, 100);
+            sem_post(m_data->semaphore);
+        }
+
+        sem_getvalue(m_data->semaphore, &value);
 
         // Convert name to key
         key_t shared_memory_key = ftok(memory_name, 1);
@@ -119,6 +124,7 @@ namespace wvb::_impl
             if (m_data->semaphore != SEM_FAILED)
             {
                 sem_close(m_data->semaphore);
+                sem_unlink(m_data->semaphore_name);
                 m_data->semaphore = SEM_FAILED;
             }
 

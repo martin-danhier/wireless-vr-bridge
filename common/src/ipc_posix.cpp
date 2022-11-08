@@ -272,7 +272,7 @@ namespace wvb
         }
     }
 
-    void InterProcessEvent::trigger() const
+    void InterProcessEvent::signal() const
     {
         if (m_data == nullptr)
         {
@@ -282,7 +282,7 @@ namespace wvb
         sem_post(m_data->semaphore);
     }
 
-    bool InterProcessEvent::is_triggered() const
+    bool InterProcessEvent::is_signaled() const
     {
         if (m_data == nullptr)
         {
@@ -296,7 +296,7 @@ namespace wvb
 
     void InterProcessEvent::reset() const
     {
-        if (is_triggered())
+        if (is_signaled())
         {
             sem_wait(m_data->semaphore);
         }

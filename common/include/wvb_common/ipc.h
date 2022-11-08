@@ -172,10 +172,10 @@ namespace wvb
         /** Waits for the event to be triggered. Return false in case of timeout. Resets the event once received. */
         bool wait(uint32_t timeout_ms = NO_TIMEOUT) const; // NOLINT(modernize-use-nodiscard)
 
-        /** Triggers the event. */
-        void trigger() const;
+        /** Signals the event. */
+        void signal() const;
 
-        [[nodiscard]] bool is_triggered() const;
+        [[nodiscard]] bool is_signaled() const;
 
         void reset() const;
     };

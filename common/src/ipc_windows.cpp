@@ -137,7 +137,7 @@ namespace wvb
         }
     }
 
-    void InterProcessEvent::trigger() const
+    void InterProcessEvent::signal() const
     {
         SetEvent(m_data->event);
     }
@@ -158,7 +158,7 @@ namespace wvb
         return triggered;
     }
 
-    bool InterProcessEvent::is_triggered() const
+    bool InterProcessEvent::is_signaled() const
     {
         // Check if the event is triggered, without waiting and without resetting it
         auto res = WaitForSingleObject(m_data->event, 0);

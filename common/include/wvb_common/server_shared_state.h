@@ -12,6 +12,13 @@ namespace wvb
 #define WVB_SERVER_DRIVER_MEMORY_NAME "WVB_SERVER_DRIVER_MEMORY"
 #define WVB_SERVER_DRIVER_MUTEX_NAME  "WVB_SERVER_DRIVER_MUTEX"
 
+#define WVB_EVENT_SERVER_STATE_CHANGED "WVB_EVENT_SERVER_STATE_CHANGED"
+#define WVB_EVENT_DRIVER_STATE_CHANGED "WVB_EVENT_DRIVER_STATE_CHANGED"
+
+    // =======================================================================================
+    // =                                     Shared state                                    =
+    // =======================================================================================
+
     enum ServerState : uint32_t
     {
         /** The server app is entirely stopped. */
@@ -30,9 +37,9 @@ namespace wvb
         /** The driver is entirely stopped. */
         NOT_RUNNING = 0,
         /** The driver is started and waiting for the server to set the VR system specs in the shared memory. */
-        AWAITING_SERVER = 2,
+        AWAITING_CLIENT_SPEC = 2,
         /** The driver is set up, but no VR content is currently running. */
-        IDLING = 3,
+        READY = 3,
         /** The driver is running, actively receiving frames from SteamVR */
         RUNNING = 4,
     };
@@ -44,4 +51,44 @@ namespace wvb
     };
 
     typedef SharedMemory<ServerDriverSharedData> ServerDriverSharedMemory;
+
+    // =======================================================================================
+    // =                                       Events                                        =
+    // =======================================================================================
+
+    // Driver events
+
+    enum class DriverEvent
+    {
+        NO_EVENT             = 0,
+        DRIVER_STATE_CHANGED = 1,
+    };
+
+    struct DriverEvents
+    {
+        InterProcessEvent driver_state_changed;
+
+        explicit DriverEvents(bool is_driver);
+
+        /** Return true if an event was triggered. Said event is set in the event parameter. */
+        [[nodiscard]] bool poll(DriverEvent& event) const;
+    };
+
+    // Server events
+
+    enum class ServerEvent
+    {
+        NO_EVENT             = 0,
+        SERVER_STATE_CHANGED = 1,
+    };
+
+    struct ServerEvents
+    {
+        InterProcessEvent server_state_changed;
+
+        explicit ServerEvents(bool is_server);
+
+        /** Return true if an event was triggered. Said event is set in the event parameter. */
+        [[nodiscard]] bool poll(ServerEvent& event) const;
+    };
 } // namespace wvb

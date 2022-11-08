@@ -33,7 +33,7 @@ TEST
             }
             // Signal the other thread that we have set the value
             std::cout << "T1: Set value from thread 1\n";
-            new_t1_data.trigger();
+            new_t1_data.signal();
 
             // Wait for the other thread to set the value
             new_t2_data.wait();
@@ -51,14 +51,14 @@ TEST
             }
             // Signal again
             std::cout << "T1: Set value from thread 1\n";
-            new_t1_data.trigger();
+            new_t1_data.signal();
 
             // Active wait to test is_triggered() function
-            while (!new_t2_data.is_triggered())
+            while (!new_t2_data.is_signaled())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
-            EXPECT_TRUE(new_t2_data.is_triggered());
+            EXPECT_TRUE(new_t2_data.is_signaled());
             {
                 auto lock = memory.lock();
                 EXPECT_EQ(lock->value, 1337);
@@ -66,7 +66,7 @@ TEST
             // Since no wait was used, we need to manually reset
             std::cout << "T1: Received value from thread 2\n";
             new_t2_data.reset();
-            EXPECT_FALSE(new_t2_data.is_triggered());
+            EXPECT_FALSE(new_t2_data.is_signaled());
         });
 
     std::thread t2(
@@ -95,7 +95,7 @@ TEST
             }
             // Signal the other thread that we have set the value
             std::cout << "T2: Set value from thread 2\n";
-            new_t2_data.trigger();
+            new_t2_data.signal();
 
             // Wait again
             new_t1_data.wait();
@@ -112,7 +112,7 @@ TEST
 
             // Signal again
             std::cout << "T2: Set value from thread 2\n";
-            new_t2_data.trigger();
+            new_t2_data.signal();
         });
 
     // Join threads

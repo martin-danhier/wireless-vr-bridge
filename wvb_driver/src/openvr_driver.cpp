@@ -31,7 +31,8 @@ namespace wvb::driver
     // =                                       Defines                                       =
     // =======================================================================================
 
-#define WATCHDOG_WAKEUP_INTERVAL_MS  5000
+#define WATCHDOG_WAKEUP_INTERVAL_MS 5000
+
 #define VIRTUAL_DEVICE_SERIAL_NUMBER "WVB-VirtualHMD"
 #define VIRTUAL_DEVICE_MODEL_NUMBER  "wireless_vr_bridge virtual device"
 
@@ -83,9 +84,12 @@ namespace wvb::driver
     class ServerDriver : public vr::IServerTrackedDeviceProvider
     {
       private:
-        DriverLogger             m_logger {nullptr};
-        VirtualHMDDriver        *m_device_driver = nullptr;
+        DriverLogger      m_logger {nullptr};
+        VirtualHMDDriver *m_device_driver = nullptr;
+        // Server communication
         ServerDriverSharedMemory m_shared_memory;
+        DriverEvents             m_driver_events {true};
+        ServerEvents             m_server_events {false};
 
       public:
         vr::EVRInitError Init(vr::IVRDriverContext *driver_context) override;
@@ -107,6 +111,9 @@ namespace wvb::driver
 
     WatchdogDriver WATCHDOG_DRIVER;
     ServerDriver   SERVER_DRIVER;
+    // Usually, the server driver is initialized, destroyed and initialized again.
+    // Use a counter to only connect to the server the second time.
+    uint8_t SERVER_INIT_COUNTER = 0;
 
     // =======================================================================================
     // =                                    Implementation                                   =
@@ -116,11 +123,46 @@ namespace wvb::driver
 
     void watchdog_thread_function()
     {
+        // Load shared memory
+        ServerDriverSharedMemory shared_memory(WVB_SERVER_DRIVER_MUTEX_NAME, WVB_SERVER_DRIVER_MEMORY_NAME);
+        InterProcessEvent        server_state_changed(WVB_EVENT_SERVER_STATE_CHANGED, false);
+
+        // Check before starting loop
+        bool server_running = false;
+        {
+            auto lock = shared_memory.lock();
+            server_running = lock->server_state != ServerState::NOT_RUNNING;
+        }
+        if (server_running)
+        {
+            vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
+        }
+
+        // Loop and wake up if it loads
         while (!EXITING)
         {
-            // Wait for
-            std::this_thread::sleep_for(std::chrono::milliseconds(WATCHDOG_WAKEUP_INTERVAL_MS));
-            vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
+            // Wait for the server to start
+            auto signaled = server_state_changed.wait(WATCHDOG_WAKEUP_INTERVAL_MS);
+
+            if (signaled)
+            {
+                bool new_state;
+                {
+                    auto lock = shared_memory.lock();
+                    new_state = lock->server_state != ServerState::NOT_RUNNING;
+                }
+
+                if (server_running != new_state)
+                {
+                    server_running = new_state;
+
+                    if (server_running)
+                    {
+                        // Wake up steam vr
+                        vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
+                    }
+                }
+            }
         }
     }
 
@@ -208,34 +250,45 @@ namespace wvb::driver
     vr::EVRInitError ServerDriver::Init(vr::IVRDriverContext *driver_context)
     {
         VR_INIT_SERVER_DRIVER_CONTEXT(driver_context);
+
         m_logger = DriverLogger(vr::VRDriverLog());
 
-        // Init shared memory and change driver state
-        m_logger.log("Server driver loaded");
-
-        m_shared_memory = ServerDriverSharedMemory(WVB_SERVER_DRIVER_MUTEX_NAME, WVB_SERVER_DRIVER_MEMORY_NAME);
+        if (SERVER_INIT_COUNTER >= 0)
         {
-            auto data          = m_shared_memory.lock();
-            data->driver_state = DriverState::AWAITING_SERVER;
+            // Init shared memory and change driver state
+            m_logger.log("Server driver loaded");
+
+            m_shared_memory = ServerDriverSharedMemory(WVB_SERVER_DRIVER_MUTEX_NAME, WVB_SERVER_DRIVER_MEMORY_NAME);
+            {
+                auto data          = m_shared_memory.lock();
+                data->driver_state = DriverState::AWAITING_CLIENT_SPEC;
+            }
+            m_driver_events.driver_state_changed.signal();
+
+            //        m_device_driver = new VirtualHMDDriver();
+            //        vr::VRServerDriverHost()->TrackedDeviceAdded(VIRTUAL_DEVICE_SERIAL_NUMBER, vr::TrackedDeviceClass_HMD,
+            //        m_device_driver);
+
+            SERVER_INIT_COUNTER++;
+            m_logger.log("Server driver initialized");
         }
-
-        //        m_device_driver = new VirtualHMDDriver();
-        //        vr::VRServerDriverHost()->TrackedDeviceAdded(VIRTUAL_DEVICE_SERIAL_NUMBER, vr::TrackedDeviceClass_HMD,
-        //        m_device_driver);
-
-        m_logger.log("Server driver initialized");
         return vr::VRInitError_None;
     }
 
     void ServerDriver::Cleanup()
     {
+        // Cleanup server
+        m_logger.log("Server driver unloaded");
+
+        // Disconnect from server
+        {
+            auto data          = m_shared_memory.lock();
+            data->driver_state = DriverState::NOT_RUNNING;
+        }
+        m_driver_events.driver_state_changed.signal();
+
         if (m_device_driver != nullptr)
         {
-            {
-                auto data          = m_shared_memory.lock();
-                data->driver_state = DriverState::NOT_RUNNING;
-            }
-
             delete m_device_driver;
             m_device_driver = nullptr;
         }

@@ -76,7 +76,7 @@ if (NOT openvr_already_in_cache STREQUAL "true")
     message("       Lib dir:     ${openvr_lib_dir}")
 endif ()
 
-# Setup and link SDL
+# Setup and link OpenVR
 add_library(openvr INTERFACE)
 target_include_directories(openvr INTERFACE ${openvr_include_dir})
 target_link_directories(openvr INTERFACE ${openvr_lib_dir})
@@ -87,3 +87,115 @@ target_link_libraries(openvr INTERFACE openvr_api)
 ##################################################################
 
 add_subdirectory(testing_framework)
+
+##################################################################
+###                        LIBDATACHANNEL                      ###
+##################################################################
+
+# Set options for subdirectory
+set(NO_EXAMPLES ON CACHE BOOL "Disable examples" FORCE)
+set(NO_TESTS ON CACHE BOOL "Disable tests builds" FORCE)
+
+add_subdirectory(libdatachannel)
+
+# Fix MSVC warning C5105 (macro expansion producing 'defined' has undefined behavior) in WinBase.h
+if (MSVC)
+    target_compile_definitions(usrsctp PRIVATE MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS=0)
+    target_compile_definitions(juice PRIVATE MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS=0)
+endif ()
+
+##################################################################
+###                           UVGRTP                           ###
+##################################################################
+
+# add_library(uvgRTP)
+# target_sources(uvgRTP PRIVATE
+#         uvgRTP/src/clock.cc
+#         uvgRTP/src/crypto.cc
+#         uvgRTP/src/frame.cc
+#         uvgRTP/src/hostname.cc
+#         uvgRTP/src/context.cc
+#         uvgRTP/src/media_stream.cc
+#         uvgRTP/src/mingw_inet.cc
+#         uvgRTP/src/reception_flow.cc
+#         uvgRTP/src/poll.cc
+#         uvgRTP/src/frame_queue.cc
+#         uvgRTP/src/random.cc
+#         uvgRTP/src/rtcp.cc
+#         uvgRTP/src/rtcp_packets.cc
+#         uvgRTP/src/rtp.cc
+#         uvgRTP/src/session.cc
+#         uvgRTP/src/socket.cc
+#         uvgRTP/src/zrtp.cc
+#         uvgRTP/src/holepuncher.cc
+
+#         uvgRTP/src/formats/media.cc
+#         uvgRTP/src/formats/h26x.cc
+#         uvgRTP/src/formats/h264.cc
+#         uvgRTP/src/formats/h265.cc
+#         uvgRTP/src/formats/h266.cc
+
+#         uvgRTP/src/zrtp/zrtp_receiver.cc
+#         uvgRTP/src/zrtp/hello.cc
+#         uvgRTP/src/zrtp/hello_ack.cc
+#         uvgRTP/src/zrtp/commit.cc
+#         uvgRTP/src/zrtp/dh_kxchng.cc
+#         uvgRTP/src/zrtp/confirm.cc
+#         uvgRTP/src/zrtp/confack.cc
+#         uvgRTP/src/zrtp/error.cc
+#         uvgRTP/src/zrtp/zrtp_message.cc
+#         uvgRTP/src/srtp/base.cc
+#         uvgRTP/src/srtp/srtp.cc
+#         uvgRTP/src/srtp/srtcp.cc
+#         uvgRTP/src/wrapper_c.cc
+# )
+# target_include_directories(uvgRTP
+#         PUBLIC uvgRTP/include
+#         PRIVATE uvgRTP/src
+#         )
+
+##################################################################
+###                             RE                             ###
+##################################################################
+
+# Dependency of RawRTC DC
+
+
+
+##################################################################
+###                          RAWRTCDC                          ###
+##################################################################
+
+# It needs to be built with Meson
+
+# Find meson cli
+# find_program(meson_cli meson)
+
+# # Error if not found
+# if (meson_cli STREQUAL "meson_cli-NOTFOUND")
+#     message(FATAL_ERROR "Meson CLI not found. Please install it.")
+# endif ()
+
+# # Create build directory
+# file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/rawrtcdc)
+
+# # Run meson to generate build files
+# execute_process(
+#         COMMAND ${meson_cli} setup ${CMAKE_CURRENT_BINARY_DIR}/rawrtcdc
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rawrtc-data-channel
+# )
+
+# # Link library
+# add_library(rawrtcdc INTERFACE)
+# target_include_directories(rawrtcdc INTERFACE
+#         ${CMAKE_CURRENT_SOURCE_DIR}/rawrtc-data-channel/include
+#         ${CMAKE_CURRENT_BINARY_DIR}/rawrtcdc/include
+#         ${CMAKE_CURRENT_SOURCE_DIR}/rawrtc-data-channel/subprojects/re/include
+#         ${CMAKE_CURRENT_SOURCE_DIR}/rawrtc-data-channel/subprojects/usrsctp
+#         ${CMAKE_CURRENT_SOURCE_DIR}/rawrtc-data-channel/subprojects/rawrtcc/include
+#         ${CMAKE_CURRENT_BINARY_DIR}/rawrtcdc/subprojects/rawrtcc/include
+#         )
+# target_link_directories(rawrtcdc INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/rawrtcdc)
+# target_link_libraries(rawrtcdc INTERFACE rawrtcdc)
+
+

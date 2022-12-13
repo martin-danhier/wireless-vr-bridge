@@ -1,7 +1,7 @@
 # Config initially inspired by https://github.com/krux02/minimal_cmake_example
 
 cmake_minimum_required(VERSION 3.16)
-project(wireless_vr_bridge)
+project(wireless_vr_bridge VERSION 0.1.0)
 
 ##################################################################
 ###                          SETTINGS                          ###

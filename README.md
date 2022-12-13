@@ -21,10 +21,11 @@ Initially, the VR client will be developed for standalone headsets only (Quest 2
 ## How to setup development environment
 
 - Clone this repository with ``--recurse-submodules`` flag
-    - If you forgot the flag, you can run `git submodule update --init` instead.
+    - If you forgot the flag, you can run `git submodule update --init --recursive` instead.
 - Install the [OpenVR SDK](https://github.com/ValveSoftware/openvr/releases)
   - If it is not at a standard location, you can extract the zip and set the ``OPENVR_SDK_PATH`` environment variable to the root directory.
   - On Linux, you can also extract the headers in `/usr/include` and the corresponding lib in `/usr/lib` or `/usr/lib64`.
+- Install the OpenSSL library
 - Install SteamVR
 - Run CMake a first time
 - To allow SteamVR to find the driver, run

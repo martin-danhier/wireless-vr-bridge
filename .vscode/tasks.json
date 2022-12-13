@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // Run CMake
+        {
+            "label": "Run CMake (Debug)",
+            "type": "shell",
+            "command": "cmake",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "args": [
+                ".",
+                "-Bbuild",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-GNinja",
+            ],
+        },
+        // Build with Ninja
+        {
+            "label": "Build (Debug)",
+            "type": "shell",
+            "command": "ninja",
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "dependsOn": [
+                "Run CMake (Debug)"
+            ],
+            "args": [
+                "tests"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

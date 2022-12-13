@@ -30,7 +30,7 @@ TEST
     sem_unlink(MUTEX_NAME);
     sem_t *sem = sem_open(MUTEX_NAME, O_CREAT, 0644, 1);
     // To test stucked semaphore, lock it
-//    sem_wait(sem);
+    sem_wait(sem);
 
     sem_close(sem);
 #elif _WIN32

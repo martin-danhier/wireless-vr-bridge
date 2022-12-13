@@ -1,0 +1,12 @@
+{
+    // Tests
+    "cmakeExplorer.buildDir": "${workspaceFolder}/build",
+    "cmakeExplorer.buildConfig": "Debug",
+    "cmakeExplorer.suiteDelimiter": "-",
+    // Dictionary
+    "cSpell.words": [
+        "rawrtc",
+        "rawrtcdc",
+        "wvb"
+    ]
+}

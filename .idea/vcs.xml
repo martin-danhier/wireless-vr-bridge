@@ -2,6 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/rawrtc-data-channel" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/testing_framework" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/uvgRTP" vcs="Git" />
   </component>
 </project>

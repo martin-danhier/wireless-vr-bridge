@@ -1,12 +1,6 @@
 [submodule "external/testing_framework"]
 	path = external/testing_framework
 	url = https://github.com/martin-danhier/testing_framework.git
-[submodule "external/uvgRTP"]
-	path = external/uvgRTP
-	url = https://github.com/ultravideo/uvgRTP.git
-[submodule "external/rawrtc-data-channel"]
-	path = external/rawrtc-data-channel
-	url = https://github.com/rawrtc/rawrtc-data-channel.git
 [submodule "external/libdatachannel"]
 	path = external/libdatachannel
 	url = https://github.com/paullouisageneau/libdatachannel

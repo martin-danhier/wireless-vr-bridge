@@ -8,40 +8,19 @@
 
 namespace wvb
 {
-    /**
-     * Main class handling real-time communication of VR content.
-     */
-//    class RTCSession
-//    {
-//      private:
-//        struct Data;
-//        Data *m_data = nullptr;
-//
-//      public:
-//        RTCSession() = default;
-//        explicit RTCSession(const char *peer_ip);
-//        RTCSession(const RTCSession &) = delete;
-//
-//        ~RTCSession();
-//
-//        [[nodiscard]] inline bool is_valid() const noexcept { return m_data != nullptr; }
-//    };
-//
-//    class MediaStream
-//    {
-//      private:
-//        friend class RTCSession;
-//
-//        MediaStream(uint16_t source_port, uint16_t peer_port);
-//    };
-//
-//    class DataChannel
-//    {
-//      private:
-//        friend class RTCSession;
-//
-//        DataChannel(uint16_t source_port, uint16_t peer_port);
-//    };
+    /** Wrapper around the RTC library, design for virtual reality streaming. */
+    class VRStream
+    {
+      private:
+        struct Data;
+        Data *m_data;
 
+      public:
+        VRStream();
+        ~VRStream();
+        VRStream(const VRStream &) = delete;
+
+        [[nodiscard]] inline bool is_valid() const noexcept { return m_data != nullptr; }
+    };
 
 } // namespace wvb

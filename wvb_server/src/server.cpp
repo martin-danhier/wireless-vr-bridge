@@ -1,5 +1,6 @@
 #include "wvb_server/server.h"
 
+#include <wvb_common/rtc.h>
 #include <wvb_common/server_shared_state.h>
 
 #include <iostream>
@@ -14,7 +15,7 @@ namespace wvb::server
     struct Server::Data
     {
         // Client communication
-        uint16_t port;
+        VRStream stream;
         // Driver communication
         ServerDriverSharedMemory shared_memory;
         DriverEvents             driver_events {false};
@@ -68,13 +69,13 @@ namespace wvb::server
     // =                                         API                                         =
     // =======================================================================================
 
-    Server::Server(uint16_t port) : m_data(new Data {port})
+    Server::Server() : m_data(new Data {})
     {
         // Init shared memory and tell the driver that the server is alive, but waiting for a client to connect
         m_data->shared_memory = ServerDriverSharedMemory(WVB_SERVER_DRIVER_MUTEX_NAME, WVB_SERVER_DRIVER_MEMORY_NAME);
         {
-            auto lock                       = m_data->shared_memory.lock();
-            lock->server_state              = ServerState::AWAITING_CONNECTION;
+            auto lock          = m_data->shared_memory.lock();
+            lock->server_state = ServerState::AWAITING_CONNECTION;
         }
         m_data->server_events.server_state_changed.signal();
 
@@ -82,7 +83,7 @@ namespace wvb::server
         m_data->handle_driver_state_changed();
 
         // Log
-        std::cout << "Server started on port " << port << "\nAwaiting connection from client..." << std::endl;
+        std::cout << "Server started.\nAwaiting connection from client..." << std::endl;
     }
 
     Server::~Server()

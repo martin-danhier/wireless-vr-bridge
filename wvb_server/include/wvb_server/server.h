@@ -49,7 +49,7 @@ namespace wvb::server
         Data *m_data = nullptr;
 
       public:
-        explicit Server(uint16_t port = 5591);
+        explicit Server();
         Server(const Server &other) = delete;
         ~Server();
 

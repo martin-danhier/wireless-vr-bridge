@@ -18,6 +18,8 @@ Bridge for low-latency wireless transmission of realtime virtual reality content
 
 Initially, the VR client will be developed for standalone headsets only (Quest 2, Pico 4).
 
+![Overview](resources/schema.png)
+
 ## How to setup development environment
 
 - Clone this repository with ``--recurse-submodules`` flag

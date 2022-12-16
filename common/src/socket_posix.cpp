@@ -62,39 +62,39 @@ namespace wvb
         }
     }
 
-    size_t UDPSocket::send_to(const void *data, size_t size, uint16_t port, InetAddr addr) const
+    size_t UDPSocket::send(const void *data, size_t size, const SocketAddr &dest) const
     {
-        sockaddr_in dest {};
-        dest.sin_family      = AF_INET;
-        dest.sin_port        = htons(port);
-        dest.sin_addr.s_addr = htonl(addr);
+        sockaddr_in dest_addr {};
+        dest_addr.sin_family      = AF_INET;
+        dest_addr.sin_port        = htons(dest.port);
+        dest_addr.sin_addr.s_addr = htonl(dest.addr);
 
-        auto res = sendto(m_data->socket, data, size, 0, (sockaddr *) &dest, sizeof(dest));
+        auto res = sendto(m_data->socket, data, size, 0, (sockaddr *) &dest_addr, sizeof(dest_addr));
 
         if (res < 0)
         {
-            throw std::runtime_error("Failed to send data");
+            throw std::runtime_error("Failed to send data (" + std::to_string(errno) + ")");
         }
 
         return static_cast<size_t>(res);
     }
 
-    size_t UDPSocket::receive_from(void *data, size_t size, uint16_t port, InetAddr addr) const
+    size_t UDPSocket::receive(void *data, size_t size, const SocketAddr &src) const
     {
         ssize_t result = 0;
 
-        if (addr == INET_ADDR_ANY)
+        if (src.is_any())
         {
             result = recvfrom(m_data->socket, data, size, 0, nullptr, nullptr);
         }
         else {
-            sockaddr_in dest {};
-            dest.sin_family      = AF_INET;
-            dest.sin_port        = htons(port);
-            dest.sin_addr.s_addr = htonl(addr);
+            sockaddr_in sender {};
+            sender.sin_family      = AF_INET;
+            sender.sin_port        = htons(src.port);
+            sender.sin_addr.s_addr = htonl(src.addr);
 
-            socklen_t len = sizeof(dest);
-            result = recvfrom(m_data->socket, data, size, 0, (sockaddr *) &dest, &len);
+            socklen_t len = sizeof(sender);
+            result = recvfrom(m_data->socket, data, size, 0, (sockaddr *) &sender, &len);
         }
 
         if (result < 0)

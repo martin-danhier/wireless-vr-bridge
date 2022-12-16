@@ -1,21 +1,25 @@
+#include <wvb_common/socket.h>
+
+#include <iostream>
 #include <test_framework.hpp>
 #include <thread>
-#include <iostream>
-#include <wvb_common/socket.h>
 
 TEST
 {
+    wvb::SocketAddr server_addr {INET_ADDR_LOOPBACK, 12345};
+    wvb::SocketAddr client_addr {INET_ADDR_LOOPBACK, 12346};
+
     std::thread server(
         [&]
         {
             // Create UDP socket
             wvb::UDPSocket socket;
 
-            ASSERT_NO_THROWS(socket = wvb::UDPSocket(12345));
+            ASSERT_NO_THROWS(socket = wvb::UDPSocket(server_addr.port));
 
             // Receive data
             uint8_t buffer[256];
-            auto    size = socket.receive_from(buffer, sizeof(buffer), 12345);
+            auto    size = socket.receive(buffer, sizeof(buffer));
 
             EXPECT_EQ(size, static_cast<size_t>(4));
 
@@ -27,7 +31,13 @@ TEST
             std::string msg = "Received " + std::to_string(size) + " bytes\n";
             std::cout << msg;
 
+            // Send data
+            uint8_t data[] = {'r', 'e', 's', 'p', 'o', 'n', 's', 'e'};
+            size           = socket.send(data, sizeof(data), client_addr);
 
+            msg = "Sent " + std::to_string(size) + " bytes\n";
+            std::cout << msg;
+            EXPECT_EQ(size, sizeof(data));
         });
 
     std::thread client(
@@ -36,18 +46,33 @@ TEST
             // Create UDP socket
             wvb::UDPSocket socket;
 
-            ASSERT_NO_THROWS(socket = wvb::UDPSocket(12346));
+            ASSERT_NO_THROWS(socket = wvb::UDPSocket(client_addr.port));
 
             // Send data
-            uint8_t buffer[4] = { 't', 'e', 's', 't' };
-            auto    size      = socket.send_to(buffer, sizeof(buffer), 12345, INET_ADDR_LOOPBACK);
+            uint8_t buffer[4] = {'t', 'e', 's', 't'};
+            auto    size      = socket.send(buffer, sizeof(buffer), server_addr);
 
             EXPECT_EQ(size, static_cast<size_t>(4));
 
             std::string msg = "Sent " + std::to_string(size) + " bytes\n";
             std::cout << msg;
 
+            // Receive data
+            uint8_t data[256];
+            size = socket.receive(data, sizeof(data));
 
+            msg = "Received " + std::to_string(size) + " bytes\n";
+            std::cout << msg;
+            EXPECT_EQ(size, static_cast<size_t>(8));
+
+            EXPECT_EQ(data[0], static_cast<uint8_t>('r'));
+            EXPECT_EQ(data[1], static_cast<uint8_t>('e'));
+            EXPECT_EQ(data[2], static_cast<uint8_t>('s'));
+            EXPECT_EQ(data[3], static_cast<uint8_t>('p'));
+            EXPECT_EQ(data[4], static_cast<uint8_t>('o'));
+            EXPECT_EQ(data[5], static_cast<uint8_t>('n'));
+            EXPECT_EQ(data[6], static_cast<uint8_t>('s'));
+            EXPECT_EQ(data[7], static_cast<uint8_t>('e'));
         });
 
     server.join();

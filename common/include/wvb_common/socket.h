@@ -17,6 +17,14 @@ namespace wvb
 
 #define NO_TIMEOUT UINT32_MAX
 
+    struct SocketAddr
+    {
+        InetAddr addr = INET_ADDR_ANY;
+        uint16_t port = 0;
+
+        [[nodiscard]] inline bool is_any() const noexcept { return addr == INET_ADDR_ANY; }
+    };
+
     /**
      * Cross-platform wrapper around UDP sockets.
      * Since UDP sockets are not connection-oriented, the destination address must be specified for each send() call.
@@ -52,22 +60,20 @@ namespace wvb
         /** Send a datagram to a specific address.
          * @param data The data to send.
          * @param size The size of the data to send.
-         * @param port The port to send the data to.
-         * @param addr The address to send the data to.
+         * @param dest The socket address to send the data to.
          * @return The number of bytes sent, or -1 if an error occurred.
          * */
-        size_t send_to(const void *data, size_t size, uint16_t port, InetAddr addr) const;
+        size_t send(const void *data, size_t size, const SocketAddr &dest) const;
 
         /** Receive a datagram from a specific address.
          * @param data The buffer to store the received data in.
          * @param size The size of the buffer.
-         * @param port The port to receive the data from.
-         * @param addr The address to receive the data from. To allow any address, use INET_ADDR_ANY.
+         * @param src  The socket address of the sender.
          * @return The number of bytes received, or -1 if an error occurred.
          *
          * If the buffer is too small, the datagram will be truncated.
          * */
-        size_t receive_from(void *data, size_t size, uint16_t port, InetAddr addr = INET_ADDR_ANY) const;
+        size_t receive(void *data, size_t size, const SocketAddr &src = SocketAddr()) const;
     };
 
 } // namespace wvb

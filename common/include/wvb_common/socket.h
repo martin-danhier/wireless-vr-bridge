@@ -1,30 +1,11 @@
 #pragma once
 
+#include "socket_addr.h"
+
 #include <cstddef>
-#include <cstdint>
 
 namespace wvb
 {
-    /** Represents an IPv4 address. */
-    typedef uint32_t InetAddr;
-
-/** Macro to create an IPv4 address from its components. */
-#define INET_ADDR(a, b, c, d) ((a << 24) | (b << 16) | (c << 8) | d)
-/** Any address (0.0.0.0) */
-#define INET_ADDR_ANY 0x00000000
-/** Loopback address (127.0.0.1) */
-#define INET_ADDR_LOOPBACK 0x7F000001
-
-#define NO_TIMEOUT UINT32_MAX
-
-    struct SocketAddr
-    {
-        InetAddr addr = INET_ADDR_ANY;
-        uint16_t port = 0;
-
-        [[nodiscard]] inline bool is_any() const noexcept { return addr == INET_ADDR_ANY; }
-    };
-
     /**
      * Cross-platform wrapper around UDP sockets.
      * Since UDP sockets are not connection-oriented, the destination address must be specified for each send() call.
@@ -74,6 +55,13 @@ namespace wvb
          * If the buffer is too small, the datagram will be truncated.
          * */
         size_t receive(void *data, size_t size, const SocketAddr &src = SocketAddr()) const;
+
+        /** Returns the port that is actually in use by the socket. Useful when the port is chosen automatically. */
+        [[nodiscard]] uint16_t port() const;
+        /** Returns the address that is actually in use by the socket. Useful when the address is chosen automatically. */
+        [[nodiscard]] InetAddr inet_addr() const;
+        /** Returns the address that is actually in use by the socket. Useful when the address is chosen automatically. */
+        [[nodiscard]] SocketAddr socket_addr() const;
     };
 
 } // namespace wvb

@@ -20,7 +20,8 @@ namespace wvb
 
     struct UDPSocket::Data
     {
-        SOCKET socket = INVALID_HANDLE_VALUE;
+        SOCKET   socket      = INVALID_HANDLE_VALUE;
+        SocketAddr local_addr = {};
     };
 
     // =======================================================================================
@@ -40,12 +41,24 @@ namespace wvb
         sockaddr_in addr {};
         addr.sin_family      = AF_INET;
         addr.sin_port        = htons(port);
-        addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        auto res         = bind(m_data->socket, (sockaddr *) &addr, sizeof(addr));
+        addr.sin_addr.s_addr = htonl(INET_ADDR_LOOPBACK);
+        auto res             = bind(m_data->socket, (sockaddr *) &addr, sizeof(addr));
         if (res != 0)
         {
             throw std::runtime_error("Failed to bind socket");
         }
+
+        // Get the actual port
+        socklen_t addr_len = sizeof(addr);
+        res                = getsockname(m_data->socket, (sockaddr *) &addr, &addr_len);
+        if (res != 0)
+        {
+            throw std::runtime_error("Failed to get socket address");
+        }
+
+        m_data->local_addr.addr = ntohl(addr.sin_addr.s_addr);
+        m_data->local_addr.port = ntohs(addr.sin_port);
+        
     }
 
     UDPSocket::~UDPSocket()
@@ -87,14 +100,15 @@ namespace wvb
         {
             result = recvfrom(m_data->socket, data, size, 0, nullptr, nullptr);
         }
-        else {
+        else
+        {
             sockaddr_in sender {};
             sender.sin_family      = AF_INET;
             sender.sin_port        = htons(src.port);
             sender.sin_addr.s_addr = htonl(src.addr);
 
             socklen_t len = sizeof(sender);
-            result = recvfrom(m_data->socket, data, size, 0, (sockaddr *) &sender, &len);
+            result        = recvfrom(m_data->socket, data, size, 0, (sockaddr *) &sender, &len);
         }
 
         if (result < 0)
@@ -103,6 +117,18 @@ namespace wvb
         }
 
         return static_cast<size_t>(result);
+    }
+
+    uint16_t UDPSocket::port() const {
+        return m_data->local_addr.port;
+    }
+
+    InetAddr UDPSocket::inet_addr() const {
+        return m_data->local_addr.addr;
+    }
+
+    SocketAddr UDPSocket::socket_addr() const {
+        return m_data->local_addr;
     }
 
 } // namespace wvb

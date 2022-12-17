@@ -1,15 +1,8 @@
 #include "wvb_common/rtc.h"
 
+#include <wvb_common/socket.h>
+
 #include <rtc/rtc.hpp>
-#ifdef _WIN32
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <winsock2.h>
-#else
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-typedef int SOCKET;
-#endif
 
 namespace wvb
 {
@@ -25,8 +18,11 @@ namespace wvb
 
     struct VRStream::Data
     {
-        rtc::PeerConnection peer_connection;
-        SOCKET              udp_socket = 0;
+        // Config
+        SocketAddr remote_addr;
+        // Objects
+        std::shared_ptr<rtc::PeerConnection> peer_connection;
+        UDPSocket           udp_socket;
     };
 
     // =======================================================================================
@@ -56,9 +52,30 @@ namespace wvb
     // =                                   Implementation                                    =
     // =======================================================================================
 
-    VRStream::VRStream() : m_data(new Data)
+    VRStream::VRStream(uint16_t local_port, SocketAddr remote_addr)
+        : m_data(new Data {
+            .udp_socket = UDPSocket(local_port),
+        })
     {
-        m_data->peer_connection.onStateChange([](auto state) { std::cout << "State changed to " << state << "\n"; });
+        // Setup peer connection
+        std::shared_ptr<rtc::PeerConnection> pc = std::make_shared<rtc::PeerConnection>();
+        m_data->peer_connection = pc;
+        
+        // General callbacks
+        pc->onStateChange([](rtc::PeerConnection::State state) {
+            std::cout << "State changed: " << state << std::endl;
+        });
+        pc->onGatheringStateChange([pc](rtc::PeerConnection::GatheringState state
+        ) {
+            std::cout << "Gathering state changed: " << state << std::endl;
+
+            if (state == rtc::PeerConnection::GatheringState::Complete)
+            {
+                std::cout << "Local description: " << pc->localDescription() << std::endl;
+            }
+        });
+        
+        
     }
 
     VRStream::~VRStream()

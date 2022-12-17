@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "numaru.vscode-cmake-lite",
+        "twxs.cmake",
+        "fredericbonnet.cmake-test-adapter",
+        "streetsidesoftware.code-spell-checker",
+        "jeremyfunk.hidefiles"
+    ]
+}

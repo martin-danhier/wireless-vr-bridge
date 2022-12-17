@@ -8,5 +8,68 @@
         "rawrtc",
         "rawrtcdc",
         "wvb"
-    ]
+    ],
+    // Hide files
+    "hidefiles.configurationType": "local",
+    "hidefiles.globalConfig": {
+        "profiles": [
+            {
+                "name": "Default",
+                "detail": "",
+                "description": "Test",
+                "hidden": [
+                    ".vscode/",
+                    ".idea/",
+                    "cmake-build-release-visual-studio/",
+                    "cmake-build-debug-wsl/",
+                    "cmake-build-debug-visual-studio/",
+                    "cmake-build-debug/",
+                    "build/",
+                    "resources/"
+                ]
+            },
+            {
+                "name": "Project Files",
+                "detail": "Hide everything not immediately required",
+                "hidden": [
+                    "$Default",
+                    ".gitmodules",
+                    ".gitignore",
+                    ".clang-format",
+                    ".gitignore",
+                    "README.md"
+                ]
+            },
+            {
+                "hidden": [
+                    "$Project Files",
+                    "external/"
+                ],
+                "name": "Project Source Files",
+                "description": "",
+                "detail": "",
+                "peek": []
+            }
+        ]
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        ".vscode/": true,
+        ".idea/": true,
+        "cmake-build-release-visual-studio/": true,
+        "cmake-build-debug-wsl/": true,
+        "cmake-build-debug-visual-studio/": true,
+        "cmake-build-debug/": true,
+        "build/": true,
+        "resources/": true,
+        ".gitmodules": true,
+        ".gitignore": true,
+        ".clang-format": true,
+        "README.md": true
+    },
+    "hidefiles.selectedProfile": "Project Files"
 }

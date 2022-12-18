@@ -2,14 +2,13 @@
 
 #include <iostream>
 #include <test_framework.hpp>
-#include <thread>
 
 TEST
 {
-    wvb::SocketAddr server_addr {INET_ADDR_LOOPBACK, 12345};
-    wvb::SocketAddr client_addr {INET_ADDR_LOOPBACK, 12346};
+    wvb::SocketAddr server_addr {INET_ADDR_LOOPBACK, 12342};
+    wvb::SocketAddr client_addr {INET_ADDR_LOOPBACK, 12343};
 
-    std::thread server(
+    START_THREAD(server,
         [&]
         {
             // Create UDP socket
@@ -19,28 +18,29 @@ TEST
 
             // Receive data
             uint8_t buffer[256];
-            auto    size = socket.receive(buffer, sizeof(buffer));
+            auto    res = socket.receive(buffer, sizeof(buffer));
 
-            EXPECT_EQ(size, static_cast<size_t>(4));
+            ASSERT_TRUE(res.is_ok());
+            EXPECT_EQ(res.size, static_cast<size_t>(5));
 
             EXPECT_EQ(buffer[0], static_cast<uint8_t>('t'));
             EXPECT_EQ(buffer[1], static_cast<uint8_t>('e'));
             EXPECT_EQ(buffer[2], static_cast<uint8_t>('s'));
             EXPECT_EQ(buffer[3], static_cast<uint8_t>('t'));
 
-            std::string msg = "Received " + std::to_string(size) + " bytes\n";
+            std::string msg = "Received " + std::to_string(res.size) + " bytes\n";
             std::cout << msg;
 
             // Send data
-            uint8_t data[] = {'r', 'e', 's', 'p', 'o', 'n', 's', 'e'};
-            size           = socket.send(data, sizeof(data), client_addr);
+            uint8_t data[] = "response";
+            res           = socket.send(data, sizeof(data), client_addr);
+            EXPECT_TRUE(res.is_ok());
+            EXPECT_EQ(res.size, sizeof(data));
 
-            msg = "Sent " + std::to_string(size) + " bytes\n";
+            msg = "Sent " + std::to_string(res.size) + " bytes\n";
             std::cout << msg;
-            EXPECT_EQ(size, sizeof(data));
         });
-
-    std::thread client(
+    START_THREAD(client,
         [&]
         {
             // Create UDP socket
@@ -49,21 +49,23 @@ TEST
             ASSERT_NO_THROWS(socket = wvb::UDPSocket(client_addr.port));
 
             // Send data
-            uint8_t buffer[4] = {'t', 'e', 's', 't'};
-            auto    size      = socket.send(buffer, sizeof(buffer), server_addr);
+            uint8_t buffer[] = "test";
+            auto    res     = socket.send(buffer, sizeof(buffer), server_addr);
 
-            EXPECT_EQ(size, static_cast<size_t>(4));
+            EXPECT_TRUE(res.is_ok());
+            EXPECT_EQ(res.size, static_cast<size_t>(5));
 
-            std::string msg = "Sent " + std::to_string(size) + " bytes\n";
+            std::string msg = "Sent " + std::to_string(res.size) + " bytes\n";
             std::cout << msg;
 
             // Receive data
             uint8_t data[256];
-            size = socket.receive(data, sizeof(data));
+            res = socket.receive(data, sizeof(data));
+            EXPECT_TRUE(res.is_ok());
+            EXPECT_EQ(res.size, static_cast<size_t>(9));
 
-            msg = "Received " + std::to_string(size) + " bytes\n";
+            msg = "Received " + std::to_string(res.size) + " bytes\n";
             std::cout << msg;
-            EXPECT_EQ(size, static_cast<size_t>(8));
 
             EXPECT_EQ(data[0], static_cast<uint8_t>('r'));
             EXPECT_EQ(data[1], static_cast<uint8_t>('e'));

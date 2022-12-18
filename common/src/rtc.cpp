@@ -10,7 +10,7 @@ namespace wvb
     // =                                     Constants                                       =
     // =======================================================================================
 
-    typedef uint8_t rtc_result_t;
+    typedef int8_t rtc_result_t;
 
     // =======================================================================================
     // =                                 Structs and classes                                 =
@@ -67,12 +67,7 @@ namespace wvb
         });
         pc->onGatheringStateChange([pc](rtc::PeerConnection::GatheringState state
         ) {
-            std::cout << "Gathering state changed: " << state << std::endl;
-
-            if (state == rtc::PeerConnection::GatheringState::Complete)
-            {
-                std::cout << "Local description: " << pc->localDescription() << std::endl;
-            }
+            
         });
         
         

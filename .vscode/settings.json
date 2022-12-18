@@ -3,8 +3,12 @@
     "cmakeExplorer.buildDir": "${workspaceFolder}/build",
     "cmakeExplorer.buildConfig": "Debug",
     "cmakeExplorer.suiteDelimiter": "-",
+    "cmakeExplorer.extraCtestEnvVars": {
+        "NO_COLOR": "1"
+    },
     // Dictionary
     "cSpell.words": [
+        "endregion",
         "rawrtc",
         "rawrtcdc",
         "wvb"
@@ -57,19 +61,7 @@
         "**/.svn": true,
         "**/.hg": true,
         "**/CVS": true,
-        "**/.DS_Store": true,
-        ".vscode/": true,
-        ".idea/": true,
-        "cmake-build-release-visual-studio/": true,
-        "cmake-build-debug-wsl/": true,
-        "cmake-build-debug-visual-studio/": true,
-        "cmake-build-debug/": true,
-        "build/": true,
-        "resources/": true,
-        ".gitmodules": true,
-        ".gitignore": true,
-        ".clang-format": true,
-        "README.md": true
+        "**/.DS_Store": true
     },
-    "hidefiles.selectedProfile": "Project Files"
+    "hidefiles.selectedProfile": "Show All Files",
 }

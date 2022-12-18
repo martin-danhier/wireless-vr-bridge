@@ -15,7 +15,7 @@ namespace wvb::server
     struct Server::Data
     {
         // Client communication
-        VRStream stream;
+        // VRStream stream;
         // Driver communication
         ServerDriverSharedMemory shared_memory;
         DriverEvents             driver_events {false};

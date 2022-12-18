@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace wvb
 {
@@ -14,7 +15,7 @@ namespace wvb
 /** Loopback address (127.0.0.1) */
 #define INET_ADDR_LOOPBACK 0x7F000001
 
-/** 
+/**
  * When this port is used, the program will try to find an available port automatically.
  */
 #define PORT_AUTO 0
@@ -26,5 +27,14 @@ namespace wvb
 
         [[nodiscard]] inline bool is_any() const noexcept { return addr == INET_ADDR_ANY; }
         [[nodiscard]] inline bool is_port_auto() const noexcept { return port == PORT_AUTO; }
+        
+        [[nodiscard]] std::string to_string() const {
+            return std::to_string((addr >> 24) & 0xFF) + "." +
+                   std::to_string((addr >> 16) & 0xFF) + "." +
+                   std::to_string((addr >> 8) & 0xFF) + "." +
+                   std::to_string(addr & 0xFF) + ":" +
+                   std::to_string(port);
+        }
     };
+    
 } // namespace wvb

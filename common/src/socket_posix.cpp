@@ -355,7 +355,7 @@ namespace wvb
             {
                 return SocketResultType::TIMEOUT;
             }
-            return SocketResultType::ERROR;
+            throw std::runtime_error("Failed to connect to peer");
         }
 
         // Set peer address

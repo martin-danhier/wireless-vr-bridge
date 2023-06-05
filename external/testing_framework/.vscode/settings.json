@@ -1,0 +1,8 @@
+{
+    "cmakeExplorer.buildDir": "${workspaceFolder}/build",
+    "cmakeExplorer.buildConfig": "Debug",
+    "cmakeExplorer.suiteDelimiter": "-",
+    "cmakeExplorer.extraCtestEnvVars": {
+        "NO_COLOR": "1"
+    }
+}

@@ -1,0 +1,99 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.2'
+    }
+}
+
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.application'
+apply from: "${rootProject.projectDir}/VrApp.gradle"
+
+
+// Get env variables
+def FFMPEG_PATH = System.getenv("FFMPEG_ANDROID_PATH")
+if (FFMPEG_PATH == null || FFMPEG_PATH.isEmpty())
+{
+    FFMPEG_PATH = System.getenv("FFMPEG_PATH")
+}
+// Print ffmpeg path
+println("FFMPEG_PATH: " + FFMPEG_PATH)
+
+
+
+android {
+    // This is the name of the generated apk file, which will have
+    // -debug.apk or -release.apk appended to it.
+    // The filename doesn't effect the Android installation process.
+    // Use only letters to remain compatible with the package name.
+    project.archivesBaseName = "xrwvbclient"
+
+    dependencies {
+        implementation 'com.android.support:appcompat-v7:28.0.0'
+    }
+
+
+    defaultConfig {
+        applicationId 'com.wvb.xr_client'
+
+        // Gradle replaces the manifest package with this value, which must
+        // be unique on a system.  If you don't change it, a new app
+        // will replace an older one.
+        minSdkVersion 31
+        targetSdkVersion 33
+        compileSdkVersion 31
+
+        // override app plugin abiFilters for 64-bit support
+        externalNativeBuild {
+            cmake {
+                abiFilters 'arm64-v8a'
+                //  Give access to environment variables
+                arguments "-DFFMPEG_PATH=$FFMPEG_PATH"
+
+                targets 'wvb_xr_client'
+            }
+//            ndkBuild {
+//                abiFilters 'arm64-v8a'
+//            }
+        }
+    }
+
+    // List assets dirs
+    def assetsSrcDirs = ['assets', '../shaders']
+
+    // List directories in parent. If a directory is wvb_module_*, it is a plugin
+    def dirs = file('../../..').listFiles()
+    for (dir in dirs) {
+        if (dir.isDirectory() && dir.name.startsWith("wvb_module_")) {
+            println("Found plugin: " + dir.name)
+            assetsSrcDirs.add('../../../' + dir.name + '/assets')
+        }
+    }
+    println("Assets dirs: " + assetsSrcDirs)
+
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['java']
+            //jniLibs.srcDir 'libs'
+            assets.srcDirs = assetsSrcDirs
+            res.srcDirs = ['res']
+        }
+    }
+    lint {
+        disable 'ExpiredTargetSdkVersion'
+    }
+
+}

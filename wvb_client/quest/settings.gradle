@@ -1,0 +1,7 @@
+
+rootProject.projectDir = new File(settingsDir, '.')
+rootProject.name = "WVBClient"
+
+include ':'
+
+// Top level settings

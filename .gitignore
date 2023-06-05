@@ -1,0 +1,20 @@
+# Unsupported editor directories and files
+.ccls-cache
+.ccls
+.vs
+.idea
+
+# Build directories
+cmake-build-*/
+build*/
+nativelib/
+
+# Compiled shader modules
+*.spv
+
+# Misc
+*.log
+*.ipynb
+debug_print
+./gradle.properties
+__pycache__
